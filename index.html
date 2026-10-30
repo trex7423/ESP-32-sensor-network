@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ESP32 Wireless Sensor Network</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --accent: #2563eb;
+      --green: #15803d;
+      --red: #b91c1c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.55;
+    }
+    header {
+      background: #101827;
+      color: white;
+      padding: 30px 20px;
+    }
+    .wrap { max-width: 1000px; margin: 0 auto; }
+    .brand { color: #93c5fd; font-size: 0.9rem; letter-spacing: .08em; text-transform: uppercase; }
+    h1 { margin: 8px 0; font-size: clamp(1.8rem, 4vw, 2.7rem); line-height: 1.15; }
+    header p { color: #cbd5e1; max-width: 700px; margin-bottom: 0; }
+    main { max-width: 1000px; margin: 24px auto; padding: 0 16px 40px; }
+    section { margin-bottom: 22px; }
+    .section-title { font-size: 1.25rem; margin: 0 0 12px; }
+    .intro, .sensor-card, .panel {
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: 14px; padding: 20px;
+    }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .sensor-label { color: var(--muted); font-size: .92rem; }
+    .reading { font-size: 2rem; font-weight: 700; margin: 8px 0; overflow-wrap: anywhere; }
+    .unit { font-size: .95rem; font-weight: 400; color: var(--muted); }
+    .status { display: inline-block; border-radius: 999px; padding: 4px 9px; font-size: .78rem; background: #e2e8f0; color: #334155; }
+    .status.good { background: #dcfce7; color: var(--green); }
+    .status.bad { background: #fee2e2; color: var(--red); }
+    .meta { color: var(--muted); font-size: .88rem; margin-top: 10px; }
+    .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .step { padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: white; }
+    .step strong { display: block; margin-bottom: 5px; }
+    button {
+      border: 0; border-radius: 9px; padding: 10px 14px; cursor: pointer;
+      color: white; background: var(--accent); font-weight: 600;
+    }
+    button:hover { filter: brightness(.95); }
+    footer { color: var(--muted); font-size: .88rem; text-align: center; padding: 20px 10px 30px; }
+    a { color: var(--accent); }
+    @media (max-width: 700px) {
+      .grid, .steps { grid-template-columns: 1fr; }
+      header { padding: 25px 18px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="brand">Computer Networks · Mini Project</div>
+      <h1>ESP32 Wireless Sensor Network</h1>
+      <p>A small wireless sensor network that collects readings from an ultrasonic sensor, a vibration sensor and an IR obstacle sensor, then sends the data to the cloud through an ESP32 gateway.</p>
+    </div>
+  </header>
+
+  <main>
+    <section class="intro">
+      <h2 class="section-title">About the project</h2>
+      <p>
+        This project demonstrates sensor data collection, wireless device-to-device communication using ESP-NOW,
+        and cloud monitoring over Wi-Fi. The sensor node reads the connected modules and sends the readings to a
+        gateway ESP32. The gateway publishes the latest values to ThingSpeak, allowing the data to be viewed remotely.
+      </p>
+      <p><strong>Designed and developed by:</strong> <span id="creator">Your Name</span></p>
+      <p class="meta">This page displays live values from the configured ThingSpeak channel. Sensor states depend on the module and its wiring.</p>
+    </section>
+
+    <section>
+      <h2 class="section-title">Live sensor readings</h2>
+      <div class="grid">
+        <article class="sensor-card">
+          <div class="sensor-label">Ultrasonic distance</div>
+          <div class="reading" id="distance">— <span class="unit">cm</span></div>
+          <span class="status" id="distance-status">Waiting for data</span>
+        </article>
+        <article class="sensor-card">
+          <div class="sensor-label">SW-420 vibration output</div>
+          <div class="reading" id="vibration">—</div>
+          <span class="status" id="vibration-status">Waiting for data</span>
+        </article>
+        <article class="sensor-card">
+          <div class="sensor-label">IR obstacle output</div>
+          <div class="reading" id="ir">—</div>
+          <span class="status" id="ir-status">Waiting for data</span>
+        </article>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <div><strong>Cloud connection:</strong> <span id="connection" class="status">Not checked yet</span></div>
+        <div class="meta">Last update: <span id="updated">—</span> · Entry number: <span id="entry">—</span></div>
+        <p class="meta" id="message">Add your ThingSpeak channel details in the configuration section of this file to start reading data.</p>
+        <button id="refresh">Refresh readings</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="section-title">How it works</h2>
+      <div class="steps">
+        <div class="step"><strong>1. Sensor node</strong>Reads distance, vibration and IR detection values.</div>
+        <div class="step"><strong>2. ESP-NOW link</strong>Sends the sensor packet wirelessly to the gateway ESP32.</div>
+        <div class="step"><strong>3. Wi-Fi and cloud</strong>The gateway uploads readings to ThingSpeak; this website retrieves the latest feed.</div>
+      </div>
+    </section>
+  </main>
+
+  <footer>ESP32 Wireless Sensor Network · Student project demonstration</footer>
+
+  <script>
+    // CONFIGURATION: replace these with your own ThingSpeak channel details.
+    const CHANNEL_ID = "3558438";
+    // Leave blank if your channel is public. For a private channel, use the READ API KEY,
+    // never the Write API Key. A key embedded in a website can be viewed by visitors.
+    const READ_API_KEY = "";
+
+    // ThingSpeak field mapping used by the ESP32 gateway:
+    // field1 = distance (cm), field2 = vibration raw, field3 = IR raw, field4 = sequence number.
+    const REFRESH_EVERY_MS = 20000;
+
+    const $ = (id) => document.getElementById(id);
+
+    function setStatus(id, text, type = "") {
+      const el = $(id);
+      el.textContent = text;
+      el.className = "status" + (type ? " " + type : "");
+    }
+
+    function rawState(value) {
+      if (value === null || value === undefined || value === "") return "No reading";
+      const n = Number(value);
+      return n === 1 ? "HIGH (1)" : n === 0 ? "LOW (0)" : String(value);
+    }
+
+    async function loadReadings() {
+      if (!CHANNEL_ID || CHANNEL_ID === "YOUR_CHANNEL_ID") {
+        setStatus("connection", "Configuration needed", "bad");
+        $("message").textContent = "Edit index.html and replace YOUR_CHANNEL_ID with your ThingSpeak channel ID.";
+        return;
+      }
+
+      const keyPart = READ_API_KEY.trim()
+        ? "&api_key=" + encodeURIComponent(READ_API_KEY.trim())
+        : "";
+      const url = `https://api.thingspeak.com/channels/${encodeURIComponent(CHANNEL_ID)}/feeds/last.json?${keyPart.replace(/^&/, "")}`;
+
+      try {
+        setStatus("connection", "Connecting…");
+        const response = await fetch(url, { cache: "no-store" });
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        const data = await response.json();
+
+        if (!data || data.field1 === undefined && data.field2 === undefined && data.field3 === undefined) {
+          throw new Error("No feed data found. Check channel access and field mapping.");
+        }
+
+        const distance = data.field1;
+        const vibration = data.field2;
+        const ir = data.field3;
+
+        $("distance").innerHTML = (distance === null || distance === "" ? "—" : Number(distance).toFixed(1)) + ' <span class="unit">cm</span>';
+        $("vibration").textContent = rawState(vibration);
+        $("ir").textContent = rawState(ir);
+
+        setStatus("distance-status", distance === null || distance === "" ? "No reading" : "Data received", distance === null || distance === "" ? "bad" : "good");
+        setStatus("vibration-status", vibration === null || vibration === "" ? "No reading" : "Raw digital output", vibration === null || vibration === "" ? "bad" : "good");
+        setStatus("ir-status", ir === null || ir === "" ? "No reading" : "Raw digital output", ir === null || ir === "" ? "bad" : "good");
+        setStatus("connection", "Connected", "good");
+        $("updated").textContent = data.created_at ? new Date(data.created_at).toLocaleString() : "Unknown";
+        $("entry").textContent = data.entry_id ?? "—";
+        $("message").textContent = "Latest values received from ThingSpeak. HIGH/LOW are raw module outputs; detection polarity can vary by sensor.";
+      } catch (error) {
+        setStatus("connection", "Could not load data", "bad");
+        $("message").textContent = "Error: " + error.message + ". Check that the channel is public or the Read API Key is correct, and that the channel contains data.";
+      }
+    }
+
+    $("refresh").addEventListener("click", loadReadings);
+    loadReadings();
+    setInterval(loadReadings, REFRESH_EVERY_MS);
+  </script>
+</body>
+</html>
